@@ -1,0 +1,173 @@
+#Visual motivation to why pregnanices is a better offset compared to population.
+
+grav <- ggplot(data=dfg, aes(x=AGE, y=AB/GRAV)) +
+  geom_jitter(colour="lightgray") +
+  geom_boxplot() 
+
+pop <- ggplot(data=dfg, aes(x=AGE, y=AB/POP)) +
+  geom_jitter(colour="lightgray") +
+  geom_boxplot() 
+
+grid.arrange(pop, grav, ncol=2)
+
+#show the first row of dataset in latex-code.
+
+xtable(head(dfg))
+
+#EXPLORATIVE DATA ANALYSIS
+#####
+
+#Shows that AB is epxonentially distributed
+
+ggplot(subset(dfg, AB<1000), aes(AB)) + 
+  geom_histogram(col="red", 
+                 fill="red") + 
+  labs(title="Histogram för aborter") +
+  labs(x="Aborter", y="Antal")
+
+#Correlations
+
+cor(dfg$ARB, dfg$BRO) # -0.27
+cor(dfg$ARB, dfg$AB) # 0.5
+cor(dfg$ARB, dfg$RECK) # -0.27
+cor(dfg$ARB, dfg$RECL) # -0.042
+cor(dfg$AB, dfg$BRO) #-0.04
+cor(dfg$AB, dfg$RECK) #0.028
+cor(dfg$AB, dfg$RECL) #-0.18
+cor(dfg$BRO, dfg$RECK) #0.25
+
+#Examining amount of abortions per birth per region.
+
+ggplot(dfg, aes(x=RE, y=AB/GRAV, color=RE)) + geom_point(alpha=1) + theme(legend.position="none")
+ggplot(subset(dfg,(AB/GRAV)>0.5), aes(x=RE, y=(AB/GRAV), color=RE)) + geom_point(alpha=1) + theme(legend.position="none")
+
+#7 times more abortion/births for young people compared to older
+
+abgr24 <- mean(subset(dfg, AGE=="<24")$AB)/mean(subset(dfg, AGE=="<24")$GRAV)
+abgr30 <- mean(subset(dfg, AGE=="30-34")$AB)/mean(subset(dfg, AGE=="30-34")$GRAV)
+
+
+#All regions seem to be independent
+
+grid.arrange(ggplot(subset(dfg, AGE=="<24"), aes(x=RE, y=log(AB/GRAV), color=RE)) + geom_point(alpha=1) + theme(legend.position="none"),
+             ggplot(subset(dfg, AGE=="25-29"), aes(x=RE, y=log(AB/GRAV), color=RE)) + geom_point(alpha=1) + theme(legend.position="none"),
+             ggplot(subset(dfg, AGE=="30-34"), aes(x=RE, y=log(AB/GRAV), color=RE)) + geom_point(alpha=1) + theme(legend.position="none"),
+             ggplot(subset(dfg, AGE=="35<"), aes(x=RE, y=log(AB/GRAV), color=RE)) + geom_point(alpha=1) + theme(legend.position="none"),
+             ncol=2)
+
+#Examining amount of unemployed
+
+ggplot(dfg, aes(x=ARB, y=log(AB/GRAV), color=RE)) + geom_point(alpha=1) + theme(legend.position="none")
+ggplot(dfg, aes(x=log(RECK), y=log(ARB), color=RE)) + geom_point(alpha=1) + theme(legend.position="none")
+
+
+with(abortperiod, tapply(GRAV, RE, function(x) {
+  sprintf("M (SD) = %1.2f (%1.2f)", mean(x), sd(x))
+}))
+
+#Contraceptive medication to region
+
+grid.arrange(ggplot(dfg, aes(x=RE, y=log(RECK/AB), color=RE)) + geom_point(alpha=1) + theme(legend.position="none"),
+             ggplot(dfg, aes(x=RE, y=log(RECK/GRAV), color=RE)) + geom_point(alpha=1) + theme(legend.position="none"),
+             ncol=2)
+
+rek <- ggplot(dfg, aes(x=RE, y=log(RECK/(AB/GRAV)), color=RE)) + geom_point(alpha=1) + theme(legend.position="none")
+rel <- ggplot(dfg, aes(x=RE, y=log(RECL/(AB/GRAV)), color=RE)) + geom_point(alpha=1) + theme(legend.position="none")
+grid.arrange(rek, rel, ncol=2)
+grid.arrange(ggplot(subset(dfg, AGE=="<24"), aes(x=RE, y=log(RECL/(AB/GRAV)), color=RE)) + geom_point(alpha=1) + theme(legend.position="none"),
+ggplot(subset(dfg, AGE=="25-29"), aes(x=RE, y=log(RECL/(AB/GRAV)), color=RE)) + geom_point(alpha=1) + theme(legend.position="none"),
+ggplot(subset(dfg, AGE=="30-34"), aes(x=RE, y=log(RECL/(AB/GRAV)), color=RE)) + geom_point(alpha=1) + theme(legend.position="none"),
+ggplot(subset(dfg, AGE=="35<"), aes(x=RE, y=log(RECL/(AB/GRAV)), color=RE)) + geom_point(alpha=1) + theme(legend.position="none"),
+ncol=2)
+
+ggplot(dfg, aes(x=log(RECK/GRAV), y=log((AB/GRAV)), color=RE)) + geom_point(alpha=1) + theme(legend.position="none")
+
+#Full regression analysis
+
+
+#Simple linear regression for every variable
+
+lm1 <- (lm(AB ~ RE, data=dfg))
+lm2 <- (lm(AB ~ ÅR, data=dfg))
+lm3 <- (lm(AB ~ AGE, data=dfg))
+lm4 <- (lm(AB ~ GRAV, data=dfg))
+lm5 <- (lm(AB ~ GL, data=dfg))
+lm6 <- (lm(AB ~ ARB, data=dfg))
+lm7 <- (lm(AB ~ RECK, data=dfg))
+lm8 <- (lm(AB ~ PAK, data=dfg))
+lm9 <- (lm(AB ~ RECL, data=dfg))
+lm10 <- (lm(AB ~ PAL, data=dfg))
+lm11 <- (lm(AB ~ BRO, data=dfg))
+lm12 <- (lm(AB ~ POP, data=dfg))
+
+summary() 
+plot()
+
+#testing multipel regression
+
+mlm <- lm(AB ~ ARB + GL + AGE + RE + RECK + RECL + ÅR + BRO, data=dfg)
+summary(mlm)
+plot(mlm)
+
+#Poisson regression
+
+p1 <- glm(AB ~ ARB + GL + AGE + RE + RECK + RECL + ÅR + BRO + offset(log(GRAV)), data=dfg, family="poisson")
+summary(p1)
+plot(p1)
+AIC(p1)
+cost <- function(y, yhat){mean((y - yhat)^2)}
+loocvp <- cv.glm(dfg, p1, cost, K=1764)
+loocvp["delta"]
+
+
+#To examine overdispersion
+
+yhat <- predict(p1, type="response")
+yab <- dfg$AB
+z <- (yab-yhat)/sqrt(yhat)
+n <- length(dfg$AB)
+k <- length(dfg)-1
+cat("överspridninskvot är", sum(z^2)/(n-k), "\n")
+cat("p-värde av överspridning är", pchisq(sum(z^2), n-k), "\n")
+
+#Negative binomial regression
+
+nb1 <- glm.nb(AB ~ ARB + GL + AGE + RE + RECK + RECL + ÅR + BRO + offset(log(GRAV)), data=dfg)
+summary(nb1)
+plot(nb1)
+AIC(nb1)
+loocvnb <- cv.glm(dfg, nb1, cost, K=1764)
+loocvnb["delta"]
+
+#Heatmap of estimates in regions in Sweden. Red = negative estimate, Green = positive estimate.
+
+lan <- readOGR(dsn = "valgeografi_lan",layer="valgeografi_lan")
+
+mrGray <- function(x,colz){
+  library("gplots")
+  colvect <- c()
+  
+  for(i in 1:length(x)){
+    if(x[i] <0){
+      cols <- col2hex(colz[1])
+    }else{
+      cols <- col2hex(colz[2])
+    }
+    colvect <- c(colvect,cols)
+  }
+  return(colvect)
+}
+
+X <- c(2.976e+01,as.vector(nb1$coefficients[8:27]))
+kod <- c(10, 20, 9, 21, 13, 23, 6, 8, 7, 25, 12, 1, 4, 3, 17, 24, 22, 19, 14, 18, 5)
+lan1 <- data.frame(X, kod)
+t <- seq(1:25)
+lan1 <- lan1[match(t,lan1[,2]),]
+lan1 <- lan1[-2,]
+lan1 <- lan1[-10,]
+lan1 <- lan1[-13,]
+lan1 <- lan1[-13,]
+
+colors <- mrGray(lan1$X,c("red","green"))
+plot(lan,col=colors, main="Skattningar för regioner")
+box(which = "plot")
