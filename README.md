@@ -1,0 +1,390 @@
+# B.sc-Mathematical-Statistics
+My R-code for analyzing incident rates of abortions in Sweden. [IN SWEDISH]
+
+#List över alla dataset
+
+#Datasetet är nedladdat där kolumnerna visar år. För att datasetet
+#skulle kunna läsas in raderades raden högst upp där det stod "ANTAL ABORTER".
+
+#######
+#ABORTER
+######
+
+SCB_ABORT_GV <- read.csv("~/Desktop/Kandidatarbete/R-projekt/SCB_ABORT_GV.csv", sep=";", nrows = 1386, na.strings=c(""," ","NA"))
+
+#Sätter andra namn på vektorerna
+names(SCB_ABORT_GV) <- c("År", "Region", "Ålder", "<8 veckor", "9-11 veckor",
+                      ">12 veckor"
+)
+
+#Gör om till long
+SCB_ABORT_L <- reshape(SCB_ABORT_GV, 
+             varying = c("<8 veckor", "9-11 veckor",">12 veckor"), 
+             v.names = "antal",
+             timevar = "Graviditetslängd", 
+             times = c("<8 veckor", "9-11 veckor",">12 veckor"), 
+             direction = "long")
+
+#Ny data-frame för att bli av med 
+SCB_ABORT_L_MOD <- data.frame(
+  SCB_ABORT_L$År,
+  SCB_ABORT_L$Region,
+  SCB_ABORT_L$Ålder,
+  SCB_ABORT_L$Graviditetslängd,
+  SCB_ABORT_L$antal
+)
+
+levels(SCB_ABORT_L_MOD$SCB_ABORT_L.Ålder)<-c("<19", "20-24", "25-29", "30-34", "35-39", "40<")
+
+names(SCB_ABORT_L_MOD) <- c("ÅR", "RE", "AGE", "GL", "AB")
+
+SCB_ABORT_L_MOD$AB  <-  as.numeric(as.character(SCB_ABORT_L_MOD$AB))
+SCB_ABORT_L_MOD$AB[is.na(SCB_ABORT_L_MOD$AB)] <- 0
+
+head(SCB_ABORT_L_MOD)
+
+#Juster för lägre åldersintervall
+ABORT_AGE <- SCB_ABORT_L_MOD
+ABORT_AGE <-  mutate(ABORT_AGE$AGE.ny <- rep(c("<24", "<24", "25-29", "30-34", "35<", "35<"), 693))
+ABORT_AGE <- aggregate(AB ~ RE + ÅR + GL + ABORT_AGE$AGE.ny, data = ABORT_AGE, FUN = "sum")
+names(ABORT_AGE) <- c("RE", "ÅR", "GL", "AGE", "AB")
+
+######
+#ARBETSLÖSHET
+######
+ARBLOSHET <- read.csv2("~/Desktop/Kandidatarbete/R-projekt/ARBLOSHET.csv")
+
+ARBLOS <- data.frame(
+    ARBLOSHET[-9:-11,-24]
+    
+)
+
+names(ARBLOS) <- c("År", "Dalarna", "Blekinge", "Gotland", "Gävleborg", 
+                   "Halland", "Jämtland", "Jönköping", "Kalmar", "Kronoberg",
+                   "Norrbotten", "Skåne", "Stockholm", "Södermanland",
+                   "Uppsala", "Värmland", "Västerbotten", "Västernorrland",
+                   "Västmanland", "Västra Götaland", "Örebro", "Östergötland",
+                   "Sverigemedel"
+                   )
+
+ARBLOS_L <- reshape(ARBLOS, 
+                       varying = c("Dalarna", "Blekinge", "Gotland", "Gävleborg", 
+                                   "Halland", "Jämtland", "Jönköping", "Kalmar", "Kronoberg",
+                                   "Norrbotten", "Skåne", "Stockholm", "Södermanland",
+                                   "Uppsala", "Värmland", "Västerbotten", "Västernorrland",
+                                   "Västmanland", "Västra Götaland", "Örebro", "Östergötland",
+                                   "Sverigemedel"
+                       ), 
+                       v.names = "Arbetslöshet",
+                       timevar = "Region", 
+                       times = c("Dalarna", "Blekinge", "Gotland", "Gävleborg", 
+                                 "Halland", "Jämtland", "Jönköping", "Kalmar", "Kronoberg",
+                                 "Norrbotten", "Skåne", "Stockholm", "Södermanland",
+                                 "Uppsala", "Värmland", "Västerbotten", "Västernorrland",
+                                 "Västmanland", "Västra Götaland", "Örebro", "Östergötland",
+                                 "Sverigemedel"
+                       ), 
+                       direction = "long")
+
+ARBLOS_L_MOD <- data.frame(
+  ARBLOS_L[1], ARBLOS_L[2], ARBLOS_L[3]
+)
+
+names(ARBLOS_L_MOD) <- c("ÅR", "RE", "ARB")
+
+
+
+
+#######
+#DEMOGRAFI KVINNOR
+######
+DEMOGRAFI <- read.csv("~/Desktop/Kandidatarbete/R-projekt/DEMOGRAFI.csv", sep=";")
+
+names(DEMOGRAFI) <- c("Kön", "År", "Region", "15-19", "20-24","25-29", "30-34",
+                      "35-39", "40-44", "45-49")
+
+#Kortare intervall
+U24 <- DEMOGRAFI$`15-19` + DEMOGRAFI$`20-24`
+O35 <- DEMOGRAFI$`35-39` + DEMOGRAFI$`40-44` + DEMOGRAFI$'45-49'
+DEMOGRAFI$'<24' <- U24
+DEMOGRAFI$'35<' <- O35
+drops <- c("Kön", "15-19", "20-24", "35-39", "40-44", "45-49")
+DEMOGRAFI <- DEMOGRAFI[ , !(names(DEMOGRAFI) %in% drops)]
+DEMOGRAFI <- DEMOGRAFI[c("År", "Region", "<24", "25-29", "30-34", "35<")]
+head(DEMOGRAFI)
+
+DEMOGRAFI_L <- reshape(DEMOGRAFI, 
+                       varying = c("<24","25-29", "30-34",
+                                   "35<"), 
+                       v.names = "Inv",
+                       timevar = "Ålder", 
+                       times = c("<24","25-29", "30-34",
+                                 "35<"), 
+                       direction = "long")
+
+DEMOGRAFI_L_MOD <- data.frame(
+  DEMOGRAFI_L$År,
+  DEMOGRAFI_L$Ålder,
+  mapvalues(DEMOGRAFI_L$Region,
+            from = c(
+              "01 Stockholms län"  ,     "03 Uppsala län"   ,       "04 Södermanlands län" ,  
+              "05 Östergötlands län"  ,  "06 Jönköpings län"  ,     "07 Kronobergs län"  ,    
+              "08 Kalmar län"     ,      "09 Gotlands län"    ,     "10 Blekinge län"    ,    
+              "12 Skåne län"      ,      "13 Hallands län"     ,    "14 Västra Götalands län",
+              "17 Värmlands län"    ,    "18 Örebro län"     ,      "19 Västmanlands län"  ,  
+              "20 Dalarnas län"     ,    "21 Gävleborgs län"     ,  "22 Västernorrlands län" ,
+              "23 Jämtlands län"    ,    "24 Västerbottens län"  ,  "25 Norrbottens län"
+            ),
+            to = c(
+              "Stockholm", "Uppsala", "Södermanland",
+              "Östergötland", "Jönköping", "Kronoberg",
+              "Kalmar", "Gotland", "Blekinge", 
+              "Skåne", "Halland", "Västra Götaland",
+              "Värmland", "Örebro", "Västmanland",
+              "Dalarna", "Gävleborg", "Västernorrland",
+              "Jämtland", "Västerbotten", "Norrbotten"),
+  ),
+  DEMOGRAFI_L$Inv
+)
+
+names(DEMOGRAFI_L_MOD) <- c("ÅR", "AGE", "RE", "POP")
+
+
+#######
+#PREVENTIVMEDEL
+######
+
+SOC_PREV <- read.csv("~/Desktop/Kandidatarbete/R-projekt/SOC_PREV.csv", sep=";", nrows = 2352, na.strings=c(""," ","NA"))
+
+names(SOC_PREV) <- c("ÅR", "LM", "RE", "K", "AGE", "PA", "REC")
+
+levels(SOC_PREV$AGE) <- c("<19", "15-49", "20-24", "25-29", "30-34", "35-39", "40-44", "45-49")
+levels(SOC_PREV$LM) <- c("PKORT", "PLANG")
+SOC_PREV <- filter(SOC_PREV, !AGE=="15-49")
+
+for (i in which(SOC_PREV$AGE == "40-44")){
+  SOC_PREV[i, 6:7] <- SOC_PREV[i,6:7] + SOC_PREV[i+1,6:7]
+}
+SOC_PREV <- SOC_PREV[-which(SOC_PREV$AGE == "45-49"),]
+
+SOC_PREV_MOD <- data.frame(
+  SOC_PREV$ÅR,
+SOC_PREV$LM,
+  mapvalues(SOC_PREV$RE,
+            from = c(
+              "Stockholms län", "Uppsala län", "Södermanlands län", 
+              "Östergötlands län", "Jönköpings län", "Kronobergs län", 
+              "Kalmar län", "Gotlands län", "Blekinge län", 
+              "Skåne län", "Hallands län", "Västra Götalands län", 
+              "Värmlands län", "Örebro län", "Västmanlands län", 
+              "Dalarnas län", "Gävleborgs län", "Västernorrlands län", 
+              "Jämtlands län", "Västerbottens län", "Norrbottens län"
+            ),
+            to = c(
+              "Stockholm", "Uppsala", "Södermanland",
+              "Östergötland", "Jönköping", "Kronoberg",
+              "Kalmar", "Gotland", "Blekinge", 
+              "Skåne", "Halland", "Västra Götaland",
+              "Värmland", "Örebro", "Västmanland",
+              "Dalarna", "Gävleborg", "Västernorrland",
+              "Jämtland", "Västerbotten", "Norrbotten")
+  ),
+  SOC_PREV$AGE,
+  SOC_PREV$PA,
+  SOC_PREV$REC
+)
+
+names(SOC_PREV_MOD) <- c("ÅR", "LM", "RE", "AGE", "PA", "REC")
+levels(SOC_PREV_MOD$AGE) <- c("<19", "NA", "20-24", "25-29", "30-34", "35-39", "40<", "NA")
+
+#kortvarig neddan
+df_kort <- SOC_PREV_MOD
+dropL <- which(df_kort$LM=="PLANG")
+df_kort <- df_kort[-dropL,]
+df_kort$LM <- factor(df_kort$LM)
+names(df_kort) <- c("ÅR", "LM", "RE", "AGE", "PAK", "RECK")
+df_kort <- df_kort[,-2]
+
+#longvarig nedan
+df_long <- SOC_PREV_MOD
+dropK <- which(df_long$LM=="PKORT")
+df_long <- df_long[-dropK,]
+df_long$LM <- factor(df_long$LM)
+names(df_long) <- c("ÅR", "LM", "RE", "AGE", "PAL", "RECL")
+df_long <- df_long[,-2]
+
+#sammansatt
+PREV_DEL <- merge(df_kort, df_long, by = c("RE", "ÅR", "AGE"))
+
+#Patient kort
+PREV_PAK <- PREV_DEL
+PREV_PAK <-  mutate(PREV_PAK$AGE.ny <- rep(c("<24", "<24", "25-29", "30-34", "35<", "35<"), 147))
+PREV_PAK <- aggregate(PAK ~ RE + ÅR + PREV_PAK$AGE.ny, data =PREV_PAK, FUN = "sum")
+names(PREV_PAK) <- c("RE", "ÅR", "AGE", "PAK")
+
+#Recept kort
+PREV_RECK <- PREV_DEL
+PREV_RECK <-  mutate(PREV_RECK$AGE.ny <- rep(c("<24", "<24", "25-29", "30-34", "35<", "35<"), 147))
+PREV_RECK <- aggregate(RECK ~ RE + ÅR + PREV_RECK$AGE.ny, data =PREV_RECK, FUN = "sum")
+names(PREV_RECK) <- c("RE", "ÅR", "AGE", "RECK")
+
+#Patient long
+PREV_PAL <- PREV_DEL
+PREV_PAL <-  mutate(PREV_PAL$AGE.ny <- rep(c("<24", "<24", "25-29", "30-34", "35<", "35<"), 147))
+PREV_PAL <- aggregate(PAL ~ RE + ÅR + PREV_PAL$AGE.ny, data =PREV_PAL, FUN = "sum")
+names(PREV_PAL) <- c("RE", "ÅR", "AGE", "PAL")
+
+#Recept long
+PREV_RECL <- PREV_DEL
+PREV_RECL <-  mutate(PREV_RECL$AGE.ny <- rep(c("<24", "<24", "25-29", "30-34", "35<", "35<"), 147))
+PREV_RECL <- aggregate(RECL ~ RE + ÅR + PREV_RECL$AGE.ny, data =PREV_RECL, FUN = "sum")
+names(PREV_RECL) <- c("RE", "ÅR", "AGE", "RECL")
+
+#Sammansatt för ålder
+PREV_KORT <- merge(PREV_PAK, PREV_RECK, by = c("RE", "ÅR", "AGE"))
+PREV_LONG <- merge(PREV_PAL, PREV_RECL, by = c("RE", "ÅR", "AGE"))
+PREV_AGE <- merge(PREV_KORT, PREV_LONG, by = c("RE", "ÅR", "AGE"))
+
+
+#######
+#BROTT
+######
+
+BRA_BROTT <- read.csv("~/Desktop/Kandidatarbete/R-projekt/BRA_BROTT.csv", sep=";", nrows = 46, na.strings=c(""," ","NA"))
+BROTT <- data.frame(t(BRA_BROTT))
+
+names(BROTT)[names(BROTT) == 'X3'] <- 'År'
+names(BROTT)[names(BROTT) == 'X6'] <- 'Blekinge'
+names(BROTT)[names(BROTT) == 'X8'] <- 'Dalarna'
+names(BROTT)[names(BROTT) == 'X10'] <- 'Gotland'
+names(BROTT)[names(BROTT) == 'X12'] <- 'Gävleborg'
+names(BROTT)[names(BROTT) == 'X14'] <- 'Halland'
+names(BROTT)[names(BROTT) == 'X16'] <- 'Jämtland'
+names(BROTT)[names(BROTT) == 'X18'] <- 'Jönköping'
+names(BROTT)[names(BROTT) == 'X20'] <- 'Kalmar'
+names(BROTT)[names(BROTT) == 'X22'] <- 'Kronoberg'
+names(BROTT)[names(BROTT) == 'X24'] <- 'Norrbotten'
+names(BROTT)[names(BROTT) == 'X26'] <- 'Skåne'
+names(BROTT)[names(BROTT) == 'X28'] <- 'Stockholm'
+names(BROTT)[names(BROTT) == 'X30'] <- 'Södermanland'
+names(BROTT)[names(BROTT) == 'X32'] <- 'Uppsala'
+names(BROTT)[names(BROTT) == 'X34'] <- 'Värmland'
+names(BROTT)[names(BROTT) == 'X36'] <- 'Västerbotten'
+names(BROTT)[names(BROTT) == 'X38'] <- 'Västernorrland'
+names(BROTT)[names(BROTT) == 'X40'] <- 'Västermanland'
+names(BROTT)[names(BROTT) == 'X42'] <- 'Västra Götaland'
+names(BROTT)[names(BROTT) == 'X44'] <- 'Örebro'
+names(BROTT)[names(BROTT) == 'X46'] <- 'Östergötland'
+BROTT <- BROTT[-1,]
+
+BROTT_MOD <- data.frame(
+  BROTT$År,
+  BROTT$"Blekinge",
+  BROTT$"Dalarna",
+  BROTT$"Gotland",
+  BROTT$"Gävleborg",
+  BROTT$"Halland",
+  BROTT$"Jämtland",
+  BROTT$"Jönköping",
+  BROTT$"Kalmar",
+  BROTT$"Kronoberg",
+  BROTT$"Norrbotten",
+  BROTT$"Skåne",
+  BROTT$"Stockholm",
+  BROTT$"Södermanland",
+  BROTT$"Uppsala",
+  BROTT$"Värmland",
+  BROTT$"Västerbotten",
+  BROTT$"Västernorrland",
+  BROTT$"Västermanland",
+  BROTT$"Västra Götaland",
+  BROTT$"Örebro",
+  BROTT$"Östergötland"
+)
+
+names(BROTT_MOD) <- c("År","Blekinge","Dalarna","Gotland", "Gävleborg",
+                      "Halland","Jämtland","Jönköping","Kalmar",
+                      "Kronoberg","Norrbotten","Skåne","Stockholm",
+                      "Södermanland","Uppsala","Värmland","Västerbotten",
+                      "Västernorrland","Västmanland","Västra Götaland",
+                      "Örebro","Östergötland")
+
+BROTT_L <- reshape(BROTT_MOD, 
+                       varying = c("Blekinge","Dalarna","Gotland", "Gävleborg",
+                                   "Halland","Jämtland","Jönköping","Kalmar",
+                                   "Kronoberg","Norrbotten","Skåne","Stockholm",
+                                   "Södermanland","Uppsala","Värmland","Västerbotten",
+                                   "Västernorrland","Västmanland","Västra Götaland",
+                                   "Örebro","Östergötland"), 
+                       v.names = "Brott",
+                       timevar = "Region", 
+                       times = c("Blekinge","Dalarna","Gotland", "Gävleborg",
+                                 "Halland","Jämtland","Jönköping","Kalmar",
+                                 "Kronoberg","Norrbotten","Skåne","Stockholm",
+                                 "Södermanland","Uppsala","Värmland","Västerbotten",
+                                 "Västernorrland","Västmanland","Västra Götaland",
+                                 "Örebro","Östergötland"), 
+                       direction = "long")
+BROTT_L <- BROTT_L[,-4]
+names(BROTT_L) <- c("ÅR", "RE", "BRO")
+
+#Graviditeter nedan
+
+SCB_GRAV <- read.csv("~/Desktop/Kandidatarbete/R-projekt/SCB_GRAV.csv", sep=";")
+names(SCB_GRAV) <- as.matrix(SCB_GRAV[1, ])
+SCB_GRAV <- SCB_GRAV[-1, ]
+SCB_GRAV <- SCB_GRAV[-85, ]
+
+SCB_GRAV <- reshape(SCB_GRAV, 
+                       varying = c("2002", "2003","2004", "2005", "2006", "2007", "2008",
+                                   "2009", "2010", "2011", "2012", "2013", "2014", "2015"), 
+                       v.names = "Grav",
+                       timevar = "ÅR", 
+                       times = c("2002", "2003","2004", "2005", "2006", "2007", "2008",
+                                "2009", "2010", "2011", "2012", "2013", "2014", "2015"), 
+                       direction = "long")
+
+SCB_GRAV <- SCB_GRAV[,-5]
+names(SCB_GRAV) <- c("RE", "AGE", "ÅR", "GRAV")
+levels(SCB_GRAV$AGE) <- c("na", "<24", "25-29", "30-34", "35<", "na")
+SCB_GRAV$AGE <- factor(SCB_GRAV$AGE)
+SCB_GRAV$RE <- factor(SCB_GRAV$RE)
+
+
+dftest <- subset(SCB_GRAV, RE=="Stockholm" & AGE=="<24")
+
+##########
+#Datasetet neddan.
+#########
+
+#GRAVIDITET
+
+#mergar
+ABORT_AGE$RE <- as.factor(ABORT_AGE$RE)
+ABORT_AGE$AGE <- as.factor(ABORT_AGE$AGE)
+SCB_GRAV$ÅR <- as.factor(SCB_GRAV$ÅR)
+ABORT_GRAV <- merge(ABORT_AGE, SCB_GRAV, by = c("RE", "ÅR", "AGE"))
+PREV_AGE$ÅR <- as.factor(PREV_AGE$ÅR)
+PREV_AGE$AGE <- as.factor(PREV_AGE$AGE)
+ABORT_GRAV_PREV <- merge(ABORT_GRAV, PREV_AGE, by = c("RE", "ÅR", "AGE"))
+ABORT_GRAV_PREV_ARB <- merge(ABORT_GRAV_PREV, ARBLOS_L_MOD, by = c("RE", "ÅR"))
+ABORT_GRAV_PREV_ARB_BRO <- merge(ABORT_GRAV_PREV_ARB, BROTT_L, by = c("RE", "ÅR"))
+ABORT_GRAV_PREV_ARB_BRO_POP <- merge(ABORT_GRAV_PREV_ARB_BRO, DEMOGRAFI_L_MOD, by = c("RE", "ÅR", "AGE"))
+
+#transfomerar datan lite
+dfg <- ABORT_GRAV_PREV_ARB_BRO_POP
+dfg$GRAV <- as.numeric(dfg$GRAV)
+dfg$AB <- as.numeric(dfg$AB)
+dfg$RECL <- as.numeric(dfg$RECL)
+dfg$RECK <- as.numeric(dfg$RECK)
+dfg$POP <- as.numeric(dfg$POP)
+dfg <- transform(dfg, BRO = as.numeric(as.character(dfg$BRO)))
+dfg <- transform(dfg, ÅR = as.numeric(as.character(dfg$ÅR)))
+dfg$RECK <- dfg$RECK/dfg$POP
+dfg$RECL <- dfg$RECL/dfg$POP
+dfg$PAK <- dfg$PAK/dfg$POP
+dfg$PAL <- dfg$PAL/dfg$POP
+dfg$BRO <- dfg$BRO/dfg$POP
+dfg$ARB <- dfg$POP*(dfg$ARB/100)
+
+head(dfg)
