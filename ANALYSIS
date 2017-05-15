@@ -120,14 +120,14 @@ loocvp <- cv.glm(dfg, p1, cost, K=1764)
 loocvp["delta"]
 
 
-#To examine overdispersion
+#To examine overdispersion, amount of parameters is set to 8.
 
 yhat <- predict(p1, type="response")
 yab <- dfg$AB
 z <- (yab-yhat)/sqrt(yhat)
 n <- length(dfg$AB)
 k <- length(dfg)-1
-cat("överspridninskvot är", sum(z^2)/(n-k), "\n")
+cat("överspridninskvot är", sum(z^2)/(n-8), "\n")
 cat("p-värde av överspridning är", pchisq(sum(z^2), n-k), "\n")
 
 #Negative binomial regression
