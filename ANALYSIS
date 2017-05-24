@@ -36,6 +36,28 @@ cor(dfg$AB, dfg$RECK) #0.028
 cor(dfg$AB, dfg$RECL) #-0.18
 cor(dfg$BRO, dfg$RECK) #0.25
 
+#Correlation plots
+
+par(mfrow=c(2,4))
+plot(dfg$ARB, dfg$BRO)
+abline(lm(dfg$BRO~dfg$ARB), col="red")
+plot(dfg$ARB, dfg$AB)
+abline(lm(dfg$AB~dfg$ARB), col="red")
+plot(dfg$ARB, dfg$RECK)
+abline(lm(dfg$RECK~dfg$ARB), col="red")
+plot(dfg$ARB, dfg$RECL)
+abline(lm(dfg$RECL~dfg$ARB), col="red")
+plot(dfg$AB, dfg$BRO)
+abline(lm(dfg$BRO~dfg$AB), col="red")
+plot(dfg$AB, dfg$RECK)
+abline(lm(dfg$RECK~dfg$AB), col="red")
+plot(dfg$AB, dfg$RECL)
+abline(lm(dfg$RECL~dfg$AB), col="red")
+plot(dfg$BRO, dfg$RECK)
+abline(lm(dfg$RECK~dfg$BRO), col="red")
+cor(dfg$BRO, dfg$RECL)
+
+
 #Examining amount of abortions per birth per region.
 
 ggplot(dfg, aes(x=RE, y=AB/GRAV, color=RE)) + geom_point(alpha=1) + theme(legend.position="none")
@@ -127,8 +149,8 @@ yab <- dfg$AB
 z <- (yab-yhat)/sqrt(yhat)
 n <- length(dfg$AB)
 k <- length(dfg)-1
-cat("överspridninskvot är", sum(z^2)/(n-8), "\n")
-cat("p-värde av överspridning är", pchisq(sum(z^2), n-k), "\n")
+cat("quote of overdispersion", sum(z^2)/(n-8), "\n")
+cat("p-value of overdispersion", pchisq(sum(z^2), n-k), "\n")
 
 #Negative binomial regression
 
