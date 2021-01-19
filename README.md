@@ -1,4 +1,4 @@
-The R-code in this project is not very edited and not very sophisticated, however it got the job done. Follow these steps to recreate my results: 
+The R-code in this project is not sophisticated, however it got the job done. Follow these steps to recreate my results: 
 
 1. Download the csv-documents, save them in your directory, and be sure to open them and hide the title 'Tabell 1' in each csv-file. 
 2. Save the csv files and the map 'valgeografi' in your directory.
